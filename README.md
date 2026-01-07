@@ -22,21 +22,23 @@ The serializer is implemented as a **standalone static library** with no hardwar
 ---
 
 ## Repository Structure
-
+This is a coarse structure of the repository.
 ```
 /
-├── json_serializer/               # Static library project
-│   ├── Inc/
+├── json_serializer_library/               # Static library project
+│   ├── Debug
+|   ├── Inc/
 │   │   ├── data_model.h
 │   │   └── json_serializer.h
 │   └── Src/
 │       └── json_serializer.c
 ├── json_serializer_example/       # Example STM32CubeIDE project
+│   ├── Debug
 │   ├── Core/
 │   │   ├── Inc/
 │   │   └── Src/
 │   │       └── main.c
-│   └── STM32CubeIDE project files
+|   └── STM32CubeIDE project files
 ├── README.md
 └── LICENSE
 ```
@@ -61,7 +63,7 @@ The serializer is implemented as a **standalone static library** with no hardwar
 The internal data structures are defined in:
 
 ```
-json_serializer/Inc/data_model.h
+json_serializer_library/Inc/data_model.h
 ```
 
 Key characteristics:
@@ -85,7 +87,7 @@ Changing these values directly affects memory usage and the maximum JSON output 
 Header file:
 
 ```
-json_serializer/Inc/json_serializer.h
+json_serializer_library/Inc/json_serializer.h
 ```
 
 ```c
@@ -205,12 +207,12 @@ If any `MAX_*` configuration macros are changed, this value must be recalculated
 
 ## Build and Run (STM32CubeIDE)
 
-1. Import both projects (`json_serializer` and `json_serializer_example`) into the same workspace
-2. Build the `json_serializer` project (creates `libjson_serializer.a`)
+1. Import both projects (`json_serializer_library` and `json_serializer_example`) into the same workspace
+2. Build the `json_serializer_library` project (creates `libjson_serializer_library.a`)
 3. In `json_serializer_example`:
-   - Add `../json_serializer/Inc` to include paths
-   - Add the library output directory (e.g. `../json_serializer/Debug`) to linker search paths
-   - Link against `json_serializer`
+   - Add `../json_serializer_library_library/Inc` to include paths in properties tab of the example project
+   - Add the library output directory (e.g. `../json_serializer_library/Debug`) to linker search paths
+   - Link against `json_serializer_library`
 4. Build the example project
 5. Flash to the target and open the serial monitor
 
