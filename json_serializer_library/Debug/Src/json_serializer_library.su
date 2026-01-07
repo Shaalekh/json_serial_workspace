@@ -1,0 +1,2 @@
+../Src/json_serializer_library.c:32:33:append	36	static
+../Src/json_serializer_library.c:74:26:json_serialize	72	static

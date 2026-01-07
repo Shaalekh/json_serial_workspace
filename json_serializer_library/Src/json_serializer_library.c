@@ -17,11 +17,162 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
+#include "json_serializer.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
 
+/* ============================
+ * Internal Helper
+ * ============================ */
 
-/** Functions ----------------------------------------------------------------*/
-void myFunction(void)
+/**
+ * @brief Safe append to output buffer
+ */
+static json_serializer_status_t append(
+    char *buffer,
+    size_t buffer_size,
+    size_t *offset,
+    const char *fmt,
+    ...)
 {
-    /* Loop forever */
-	for(;;);
+    if (*offset >= buffer_size)
+    {
+        return JSON_SERIALIZER_ERR_BUFFER_TOO_SMALL;
+    }
+
+    va_list args;
+    va_start(args, fmt);
+
+    int written = vsnprintf(
+        &buffer[*offset],
+        buffer_size - *offset,
+        fmt,
+        args
+    );
+
+    va_end(args);
+
+    if (written < 0)
+    {
+        return JSON_SERIALIZER_ERR_INVALID_DATA;
+    }
+
+    if ((size_t)written >= (buffer_size - *offset))
+    {
+        return JSON_SERIALIZER_ERR_BUFFER_TOO_SMALL;
+    }
+
+    *offset += (size_t)written;
+    return JSON_SERIALIZER_OK;
+}
+
+/* ============================
+ * Public API
+ * ============================ */
+
+json_serializer_status_t json_serialize(
+    const gateway_data_t *input,
+    char *output,
+    size_t output_size,
+    size_t *bytes_written
+)
+{
+    if (!input || !output || !bytes_written)
+    {
+        return JSON_SERIALIZER_ERR_NULL_PTR;
+    }
+
+    size_t offset = 0;
+    json_serializer_status_t status;
+
+    /* Outer JSON array */
+    status = append(output, output_size, &offset, "[{");
+    if (status != JSON_SERIALIZER_OK) return status;
+
+    /* Gateway metadata */
+    status = append(output, output_size, &offset,
+        "\"gatewayId\":\"%s\","
+        "\"date\":\"%s\","
+        "\"deviceType\":\"%s\","
+        "\"interval_minutes\":%u,"
+        "\"total_readings\":%u,",
+        input->gateway_id,
+        input->date,
+        input->device_type,
+        input->interval_minutes,
+        input->total_readings
+    );
+    if (status != JSON_SERIALIZER_OK) return status;
+
+    /* Values object */
+    status = append(output, output_size, &offset,
+        "\"values\":{"
+        "\"device_count\":%u,"
+        "\"readings\":[",
+        input->values.device_count
+    );
+    if (status != JSON_SERIALIZER_OK) return status;
+
+    /* Devices */
+    for (uint8_t i = 0; i < input->values.device_count; i++)
+    {
+        const device_reading_t *dev = &input->values.readings[i];
+
+        status = append(output, output_size, &offset,
+            "{"
+            "\"media\":\"%s\","
+            "\"meter\":\"%s\","
+            "\"deviceId\":\"%s\","
+            "\"unit\":\"%s\","
+            "\"data\":[",
+            dev->media,
+            dev->meter,
+            dev->device_id,
+            dev->unit
+        );
+        if (status != JSON_SERIALIZER_OK) return status;
+
+        /* Data points */
+        for (uint8_t j = 0; j < dev->data_count; j++)
+        {
+            const meter_data_point_t *dp = &dev->data[j];
+
+            status = append(output, output_size, &offset,
+                "{"
+                "\"timestamp\":\"%s\","
+                "\"meter_datetime\":\"%s\","
+                "\"total_m3\":%.3f,"
+                "\"status\":\"%s\""
+                "}",
+                dp->timestamp,
+                dp->meter_datetime,
+                dp->total_m3,
+                dp->status
+            );
+            if (status != JSON_SERIALIZER_OK) return status;
+
+            if (j + 1 < dev->data_count)
+            {
+                status = append(output, output_size, &offset, ",");
+                if (status != JSON_SERIALIZER_OK) return status;
+            }
+        }
+
+        status = append(output, output_size, &offset, "]}");
+        if (status != JSON_SERIALIZER_OK) return status;
+
+        if (i + 1 < input->values.device_count)
+        {
+            status = append(output, output_size, &offset, ",");
+            if (status != JSON_SERIALIZER_OK) return status;
+        }
+    }
+
+    /* Close JSON structure */
+    status = append(output, output_size, &offset, "]}]");
+    if (status != JSON_SERIALIZER_OK) return status;
+
+    *bytes_written = offset;
+    return JSON_SERIALIZER_OK;
 }
