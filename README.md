@@ -215,3 +215,12 @@ If any `MAX_*` configuration macros are changed, this value must be recalculated
 5. Flash to the target and open the serial monitor
 
 ---
+
+
+## License
+
+This project is licensed under the **MIT License**.
+
+The MIT License was chosen for its simplicity and permissive nature, making the code easy to reuse for demonstration, educational, or commercial purposes.
+
+See the `LICENSE` file for full license text.
